@@ -22,6 +22,7 @@ def text(message):
     The message is sent to all people in the room."""
     room = session.get('room')
     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+    mqtt.publish('4ce213436/mytopic', session.get('name') + ':' + message['msg'])
 
 
 @socketio.on('left', namespace='/chat')
@@ -38,16 +39,12 @@ def left(message):
 
 @mqtt.on_connect()
 def handle_connect(client, userdata, flags, rc):
-    mqtt.subscribe('#')
+    mqtt.subscribe('4ce213436/mytopic')
 
 
 @mqtt.on_message()
 def handle_mqtt_message(client, userdata, message):
     # print('received args: ' + message.topic)
-    data = dict(
-        topic=message.topic
-        # payload = message.payload.decode()
-    )
     if mqtt.total_mqtt > 0:
-        socketio.emit('mqtt_message', {'msg': message.topic}, namespace='/chat', room=mqtt.mqtt_room_name)
+        socketio.emit('mqtt_message', {'msg': message.topic + ' < ' + message.payload.decode()}, namespace='/chat', room=mqtt.mqtt_room_name)
 
