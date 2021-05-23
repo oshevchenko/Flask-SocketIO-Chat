@@ -1,0 +1,16 @@
+# Copy to  /etc/systemd/system/flask_chat.service
+[Unit]
+Description=Gunicorn instance to serve Flask-SocketIO-Chat project.
+After=network.target
+
+[Service]
+User=oshevchenko
+Group=www-data
+
+WorkingDirectory=/home/oshevchenko/workspace/flask_venv/Flask-SocketIO-Chat
+Environment="PATH=/home/oshevchenko/workspace/flask_venv_3.8/bin"
+ExecStart=/home/oshevchenko/workspace/flask_venv_3.8/bin/gunicorn --bind 127.0.0.1:7777 --worker-class eventlet -w 1 chat:app
+
+[Install]
+WantedBy=multi-user.target
+
