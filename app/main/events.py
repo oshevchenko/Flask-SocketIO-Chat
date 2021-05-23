@@ -1,6 +1,7 @@
 from flask import session
 from flask_socketio import emit, join_room, leave_room
 from .. import socketio
+from .. import mqtt
 
 
 @socketio.on('joined', namespace='/chat')
@@ -9,6 +10,9 @@ def joined(message):
     A status message is broadcast to all people in the room."""
     room = session.get('room')
     join_room(room)
+    if room == mqtt.mqtt_room_name:
+        mqtt.total_mqtt += 1
+        print('Join total_mqtt=' + str(mqtt.total_mqtt))
     emit('status', {'msg': session.get('name') + ' has entered the room.'}, room=room)
 
 
@@ -25,6 +29,25 @@ def left(message):
     """Sent by clients when they leave a room.
     A status message is broadcast to all people in the room."""
     room = session.get('room')
+    if room == mqtt.mqtt_room_name:
+        mqtt.total_mqtt -= 1
+        print('Quit total_mqtt=' + str(mqtt.total_mqtt))
     leave_room(room)
     emit('status', {'msg': session.get('name') + ' has left the room.'}, room=room)
+
+
+@mqtt.on_connect()
+def handle_connect(client, userdata, flags, rc):
+    mqtt.subscribe('#')
+
+
+@mqtt.on_message()
+def handle_mqtt_message(client, userdata, message):
+    # print('received args: ' + message.topic)
+    data = dict(
+        topic=message.topic
+        # payload = message.payload.decode()
+    )
+    if mqtt.total_mqtt > 0:
+        socketio.emit('mqtt_message', {'msg': message.topic}, namespace='/chat', room=mqtt.mqtt_room_name)
 
